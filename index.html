@@ -1,14 +1,578 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SubGuard — Know What You're Paying For</title>
-    <meta name="description" content="SubGuard is a browser extension that tracks, manages, and helps you cancel subscriptions. No cloud. No account. Just clarity." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script type="module" src="/src/main.ts"></script>
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubGuard — Know What You're Paying For</title>
+  <meta name="description" content="SubGuard is a browser extension that tracks, manages, and helps you cancel subscriptions. No cloud. No account. Just clarity." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-base: #0d0d1a;
+      --text: #f0f0f8;
+      --text-muted: #9090b0;
+      --accent: #7c3aed;
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.12);
+      --radius: 16px;
+    }
+    
+    html { scroll-behavior: smooth; }
+    
+    body {
+      background: linear-gradient(135deg, #0d0d1a 0%, #130d2e 40%, #0d1a2e 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    
+    /* Nav */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,13,26,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 18px;
+    }
+    
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      flex: 1;
+      justify-content: center;
+    }
+    
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover { color: var(--text); }
+    
+    /* Hero */
+    .hero {
+      padding: 120px 0 80px;
+      text-align: center;
+    }
+    
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    .hero-title {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+    
+    .accent { color: var(--accent); }
+    
+    .hero-sub {
+      font-size: 20px;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 40px;
+    }
+    
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #6d28d9;
+      transform: translateY(-2px);
+    }
+    
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--glass-border);
+    }
+    
+    .btn-ghost:hover {
+      background: var(--glass-bg);
+    }
+    
+    /* Section */
+    section {
+      padding: 80px 0;
+    }
+    
+    .section-label {
+      text-align: center;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 14px;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      text-align: center;
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    
+    .section-sub {
+      text-align: center;
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 48px;
+    }
+    
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      gap: 80px;
+    }
+    
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    
+    @media (max-width: 768px) {
+      .feature-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .nav-links { display: none; }
+    }
+    
+    .feature-tag {
+      display: inline-block;
+      padding: 6px 12px;
+      background: var(--glass-bg);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    
+    .feature-text h3 {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    
+    .feature-text p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    .feature-list {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+    
+    .feature-list li {
+      color: var(--text-muted);
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .feature-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    
+    .feature-visual {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Pricing */
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .pricing-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      position: relative;
+    }
+    
+    .pricing-card.featured {
+      border-color: var(--accent);
+      background: rgba(124,58,237,0.1);
+    }
+    
+    .plan-name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    
+    .plan-price {
+      margin-bottom: 16px;
+    }
+    
+    .price-amount {
+      font-size: 48px;
+      font-weight: 700;
+    }
+    
+    .price-period {
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+    
+    .plan-desc {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    .plan-features {
+      list-style: none;
+      margin-bottom: 32px;
+      display: grid;
+      gap: 12px;
+    }
+    
+    .plan-features li {
+      color: var(--text-muted);
+    }
+    
+    .btn-full {
+      width: 100%;
+      text-align: center;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text);
+    }
+    
+    .btn-outline:hover {
+      background: var(--glass-bg);
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--glass-border);
+      margin-top: 80px;
+    }
+    
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .footer-brand p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    
+    .footer-links a:hover {
+      color: var(--text);
+    }
+    
+    .footer-copy {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <div class="logo-mark">S</div>
+        <span>SubGuard</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <a href="#pricing" class="btn btn-primary">Get Started Free</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">Browser Extension · Chrome & Edge</div>
+      <h1 class="hero-title">
+        You're probably paying for<br/>
+        <span class="accent">things you forgot about.</span>
+      </h1>
+      <p class="hero-sub">
+        SubGuard sits quietly in your browser and keeps track of every subscription —
+        what it costs, when it renews, and how to cancel it.
+        No cloud account. No data leaving your device.
+      </p>
+      <div class="hero-actions">
+        <a href="#pricing" class="btn btn-primary">Start Free — 1 Month on Us</a>
+        <a href="#features" class="btn btn-ghost">See how it works</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-label">What SubGuard does</div>
+      <h2 class="section-title">One place. Full picture. No surprises.</h2>
+      <div class="features-grid">
+
+        <div class="feature-row">
+          <div class="feature-text">
+            <div class="feature-tag">Dashboard</div>
+            <h3>See everything at once</h3>
+            <p>Your total monthly spend, upcoming renewals, and every active subscription in one clean view.</p>
+            <ul class="feature-list">
+              <li>Monthly & annual spend totals</li>
+              <li>Upcoming renewals in the next 7 days</li>
+              <li>Filter by Streaming, SaaS, Fitness, AI, and more</li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <p style="color: var(--text-muted);">📊 Dashboard Preview</p>
+          </div>
+        </div>
+
+        <div class="feature-row">
+          <div class="feature-visual">
+            <p style="color: var(--text-muted);">🔔 Notification Preview</p>
+          </div>
+          <div class="feature-text">
+            <div class="feature-tag">Renewal Reminders</div>
+            <h3>Never get surprised again</h3>
+            <p>SubGuard sends you a browser notification before any subscription renews.</p>
+            <ul class="feature-list">
+              <li>Configurable reminder lead time (1–30 days)</li>
+              <li>Special alerts for trials about to convert</li>
+              <li>Works even when the browser is closed</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="feature-row">
+          <div class="feature-text">
+            <div class="feature-tag">Cancel Helper</div>
+            <h3>Step-by-step cancellation guidance</h3>
+            <p>For every major service, SubGuard shows you exactly how to cancel.</p>
+            <ul class="feature-list">
+              <li>40+ services with cancellation instructions</li>
+              <li>Direct "Open Cancel Page" button</li>
+              <li>Marks subscription as cancelled automatically</li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <p style="color: var(--text-muted);">✂️ Cancel Helper Preview</p>
+          </div>
+        </div>
+
+        <div class="feature-row">
+          <div class="feature-visual">
+            <p style="color: var(--text-muted);">🔒 Privacy First</p>
+          </div>
+          <div class="feature-text">
+            <div class="feature-tag">Privacy First</div>
+            <h3>Your data never leaves your device</h3>
+            <p>Everything is stored locally in your browser. No account required. No server. No cloud sync.</p>
+            <ul class="feature-list">
+              <li>100% local storage — no cloud account</li>
+              <li>Export your data as CSV anytime</li>
+              <li>Delete everything with one click</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-label">Pricing</div>
+      <h2 class="section-title">Start free. Stay if it helps.</h2>
+      <p class="section-sub">One month free, no credit card needed. After that, it's less than a coffee.</p>
+      <div class="pricing-cards">
+        <div class="pricing-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price"><span class="price-amount">$0</span><span class="price-period"> / 1 month</span></div>
+          <div class="plan-desc">Everything you need to get started. No card required.</div>
+          <ul class="plan-features">
+            <li>✓ Full dashboard & spend tracking</li>
+            <li>✓ Renewal reminders</li>
+            <li>✓ Cancel helper (40+ services)</li>
+            <li>✓ Calendar view</li>
+            <li>✓ CSV export & import</li>
+            <li>✓ 100% local — no account</li>
+          </ul>
+          <a href="#" class="btn btn-outline btn-full">Install Free</a>
+        </div>
+        <div class="pricing-card featured">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price"><span class="price-amount">$2.99</span><span class="price-period"> / month</span></div>
+          <div class="plan-desc">After your free month. Cancel anytime.</div>
+          <ul class="plan-features">
+            <li>✓ Everything in Free</li>
+            <li>✓ Gmail email scanning</li>
+            <li>✓ AI keep/cancel recommendations</li>
+            <li>✓ Auto-highlight cancel buttons</li>
+            <li>✓ Smart auto-categorization</li>
+            <li>✓ Priority support</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-full">Start Free Month</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-mark">S</div>
+            <span>SubGuard</span>
+          </div>
+          <p>Know what you're paying for.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+      <div class="footer-copy">© 2025 SubGuard. Built with care for people who hate surprise charges.</div>
+    </div>
+  </footer>
+
+  <script>
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href && href !== '#') {
+          e.preventDefault();
+          document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+
+</body>
 </html>
