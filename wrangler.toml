@@ -7,3 +7,7 @@ bucket = "./dist"
 
 [build]
 command = "npm run build"
+
+[[assets]]
+binding = "ASSETS"
+directory = "./dist"
