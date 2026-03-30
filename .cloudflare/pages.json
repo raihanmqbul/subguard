@@ -1,0 +1,7 @@
+{
+  "$schema": "https://developers.cloudflare.com/pages/functions/schema.json",
+  "build": {
+    "command": "npm run build",
+    "output_directory": "dist"
+  }
+}
